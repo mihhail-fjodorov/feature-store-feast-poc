@@ -1,0 +1,62 @@
+version: '3'
+services:
+  registry:
+    image: postgres
+    volumes:
+      - ./data-registry:/var/lib/postgresql/data
+      - ./init-registry.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: feast
+  offline_store:
+    image: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./data-offline:/var/lib/postgresql/data
+      - ./init-offline.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "postgres", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  online-store:
+    image: redis
+    ports:
+      - "6379:6379"
+  customer_db:
+    image: postgres
+    volumes:
+      - ./data-customer:/var/lib/postgresql/data
+      - ./init-customer.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "postgres", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  customer-service:
+    build:  customer/.
+    depends_on:
+      customer_db:
+        condition: service_healthy
+  transafer-job:
+    build:  transfer/.
+    depends_on:
+      customer_db: 
+        condition: service_healthy
+      offline_store:
+        condition: service_healthy
+
