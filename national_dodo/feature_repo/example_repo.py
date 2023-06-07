@@ -1,5 +1,3 @@
-# This is an example feature definition file
-
 from datetime import timedelta
 
 import pandas as pd
