@@ -1,5 +1,6 @@
 version: '3'
 services:
+
   registry:
     image: postgres
     volumes:
@@ -11,6 +12,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mysecretpassword
       POSTGRES_DB: feast
+  
   offline_store:
     image: postgres
     ports:
@@ -27,10 +29,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
   online-store:
     image: redis
     ports:
       - "6379:6379"
+  
   customer_db:
     image: postgres
     volumes:
@@ -47,11 +51,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
   customer-service:
     build:  customer/.
     depends_on:
       customer_db:
         condition: service_healthy
+  
   transafer-job:
     build:  transfer/.
     depends_on:
@@ -59,4 +65,9 @@ services:
         condition: service_healthy
       offline_store:
         condition: service_healthy
+
+  feature-server:
+    build: national_dodo/.
+    ports:
+      - "6566:6566"
 
